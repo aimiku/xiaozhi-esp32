@@ -343,6 +343,9 @@ void LcdDisplay::Unlock() {
 
 #if CONFIG_USE_WECHAT_MESSAGE_STYLE
 void LcdDisplay::SetupUI() {
+    // 让底部文字栏文字垂直居中
+    lv_obj_set_style_pad_top(chat_message_label_, 4, 0);
+    lv_obj_set_style_pad_bottom(chat_message_label_, 4, 0);
     DisplayLockGuard lock(this);
 
     auto lvgl_theme = static_cast<LvglTheme*>(current_theme_);
@@ -368,9 +371,9 @@ void LcdDisplay::SetupUI() {
 
     /* Status bar */
     status_bar_ = lv_obj_create(container_);
-    lv_obj_set_size(status_bar_, LV_HOR_RES, LV_SIZE_CONTENT);
-    lv_obj_set_style_radius(status_bar_, 0, 0);
-    lv_obj_set_style_bg_color(status_bar_, lvgl_theme->background_color(), 0);
+        lv_obj_set_style_radius(screen, 0, 0);
+        lv_obj_set_style_border_width(screen, 0, 0);
+        lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(status_bar_, lvgl_theme->text_color(), 0);
     
     /* Content - Chat area */
@@ -399,9 +402,8 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_all(status_bar_, 0, 0);
     lv_obj_set_style_border_width(status_bar_, 0, 0);
     lv_obj_set_style_pad_column(status_bar_, 0, 0);
-    lv_obj_set_style_pad_top(status_bar_, lvgl_theme->spacing(2), 0);
-    lv_obj_set_style_pad_bottom(status_bar_, lvgl_theme->spacing(2), 0);
-    lv_obj_set_style_pad_left(status_bar_, lvgl_theme->spacing(4), 0);
+        lv_obj_set_style_radius(status_bar_, 8, 0); // 圆角统一为8
+        lv_obj_set_style_border_color(status_bar_, lv_color_hex(0xDDDDDD), 0); // 可选浅灰色边框（视觉弱化）
     lv_obj_set_style_pad_right(status_bar_, lvgl_theme->spacing(4), 0);
     lv_obj_set_scrollbar_mode(status_bar_, LV_SCROLLBAR_MODE_OFF);
     // 设置状态栏的内容垂直居中
@@ -413,12 +415,12 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_text_color(network_label_, lvgl_theme->text_color(), 0);
 
     notification_label_ = lv_label_create(status_bar_);
-    lv_obj_set_flex_grow(notification_label_, 1);
-    lv_obj_set_style_text_align(notification_label_, LV_TEXT_ALIGN_CENTER, 0);
-    lv_obj_set_style_text_color(notification_label_, lvgl_theme->text_color(), 0);
-    lv_label_set_text(notification_label_, "");
-    lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
-
+        // 圆角统一为8
+        lv_obj_set_style_radius(chat_message_label_, 8, 0);
+        // 无边框，仅浅灰色背景
+        lv_obj_set_style_border_width(chat_message_label_, 0, 0);
+        lv_obj_set_style_bg_color(chat_message_label_, lv_color_hex(0xDDDDDD), 0); // 浅灰色背景
+        lv_obj_set_style_bg_opa(chat_message_label_, LV_OPA_60, 0); // 更明显
     status_label_ = lv_label_create(status_bar_);
     lv_obj_set_flex_grow(status_label_, 1);
     lv_label_set_long_mode(status_label_, LV_LABEL_LONG_SCROLL_CIRCULAR);
@@ -765,19 +767,21 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_bg_color(container_, lvgl_theme->background_color(), 0);
     lv_obj_set_style_border_color(container_, lvgl_theme->border_color(), 0);
 
-    /* Status bar */
-    status_bar_ = lv_obj_create(container_);
-    lv_obj_set_size(status_bar_, LV_HOR_RES, LV_SIZE_CONTENT);
-    lv_obj_set_style_radius(status_bar_, 0, 0);
-    lv_obj_set_style_bg_color(status_bar_, lvgl_theme->background_color(), 0);
+    /* Status bar 浮在顶部 */
+    status_bar_ = lv_obj_create(screen);
+    lv_obj_set_size(status_bar_, LV_HOR_RES * 0.95, 34); // 宽度95%，高度40像素
+    lv_obj_set_style_radius(status_bar_, 5, 0); // 圆角8
+    lv_obj_set_style_bg_color(status_bar_, lv_color_hex(0xBBBBBB), 0); // 深灰色背景
     lv_obj_set_style_text_color(status_bar_, lvgl_theme->text_color(), 0);
     lv_obj_set_flex_flow(status_bar_, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_top(status_bar_, lvgl_theme->spacing(2), 0);
     lv_obj_set_style_pad_bottom(status_bar_, lvgl_theme->spacing(2), 0);
     lv_obj_set_style_pad_left(status_bar_, lvgl_theme->spacing(4), 0);
     lv_obj_set_style_pad_right(status_bar_, lvgl_theme->spacing(4), 0);
-    lv_obj_set_style_border_width(status_bar_, 0, 0);
+    lv_obj_set_style_border_width(status_bar_, 0, 0); // 无边框
+    lv_obj_set_style_bg_opa(status_bar_, LV_OPA_60, 0); // 更明显
     lv_obj_set_style_pad_column(status_bar_, 0, 0);
+    lv_obj_align(status_bar_, LV_ALIGN_TOP_MID, 0, 4); // 距顶部2像素
     
     /* Content */
     content_ = lv_obj_create(container_);
@@ -792,32 +796,47 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_flex_flow(content_, LV_FLEX_FLOW_COLUMN); // 垂直布局（从上到下）
     lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY); // 子对象居中对齐，等距分布
 
+    // 创建emoji容器，垂直居中
     emoji_box_ = lv_obj_create(content_);
-    lv_obj_set_size(emoji_box_, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_size(emoji_box_, LV_HOR_RES, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(emoji_box_, LV_OPA_TRANSP, 0);
     lv_obj_set_style_pad_all(emoji_box_, 0, 0);
     lv_obj_set_style_border_width(emoji_box_, 0, 0);
+    lv_obj_set_flex_flow(emoji_box_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(emoji_box_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
+    // emoji始终居中显示，无需排除顶部状态栏空间
     emoji_label_ = lv_label_create(emoji_box_);
     lv_obj_set_style_text_font(emoji_label_, large_icon_font, 0);
     lv_obj_set_style_text_color(emoji_label_, lvgl_theme->text_color(), 0);
     lv_label_set_text(emoji_label_, FONT_AWESOME_MICROCHIP_AI);
+    lv_obj_align(emoji_label_, LV_ALIGN_CENTER, 0, 0); // 直接居中
 
     emoji_image_ = lv_img_create(emoji_box_);
     lv_obj_center(emoji_image_);
     lv_obj_add_flag(emoji_image_, LV_OBJ_FLAG_HIDDEN);
 
+    // 文字固定在屏幕底部，与emoji分离
+    chat_message_label_ = lv_label_create(screen);
+    lv_label_set_text(chat_message_label_, "Hello World! moe.lu"); // 初始化显示
+    lv_label_set_long_mode(chat_message_label_, LV_LABEL_LONG_SCROLL_CIRCULAR); // 滚动显示
+    lv_obj_set_style_text_align(chat_message_label_, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_color(chat_message_label_, lvgl_theme->text_color(), 0);
+    lv_obj_set_style_border_color(chat_message_label_, lvgl_theme->border_color(), 0);
+    // 圆角统一为8
+    // 已在后面设置为8，无需12
+        lv_obj_set_width(chat_message_label_, width_ * 0.95); // 宽度与顶部一致
+        lv_obj_set_style_pad_top(chat_message_label_, 6, 0);
+        lv_obj_set_style_radius(chat_message_label_, 5, 0); // 圆角与顶部一致
+        lv_obj_set_style_border_width(chat_message_label_, 0, 0); // 无边框
+        lv_obj_set_style_bg_color(chat_message_label_, lv_color_hex(0xBBBBBB), 0); // 背景色与顶部一致
+        lv_obj_set_style_bg_opa(chat_message_label_, LV_OPA_60, 0); // 透明度一致
+        lv_obj_set_height(chat_message_label_, 34); // 高度调小为32像素
+        lv_obj_align(chat_message_label_, LV_ALIGN_BOTTOM_MID, 0, -4); // 距底部2像素
     preview_image_ = lv_image_create(content_);
-    lv_obj_set_size(preview_image_, width_ / 2, height_ / 2);
+    lv_obj_set_size(preview_image_, width_ / 1.5, height_ / 1.5);
     lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
     lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
-
-    chat_message_label_ = lv_label_create(content_);
-    lv_label_set_text(chat_message_label_, "");
-    lv_obj_set_width(chat_message_label_, width_ * 0.9); // 限制宽度为屏幕宽度的 90%
-    lv_label_set_long_mode(chat_message_label_, LV_LABEL_LONG_WRAP); // 设置为自动换行模式
-    lv_obj_set_style_text_align(chat_message_label_, LV_TEXT_ALIGN_CENTER, 0); // 设置文本居中对齐
-    lv_obj_set_style_text_color(chat_message_label_, lvgl_theme->text_color(), 0);
 
     /* Status bar */
     network_label_ = lv_label_create(status_bar_);
@@ -1013,9 +1032,9 @@ void LcdDisplay::SetTheme(Theme* theme) {
         lv_obj_set_style_bg_color(container_, lvgl_theme->background_color(), 0);
     }
     
-    // Update status bar background color with 50% opacity
-    lv_obj_set_style_bg_opa(status_bar_, LV_OPA_50, 0);
-    lv_obj_set_style_bg_color(status_bar_, lvgl_theme->background_color(), 0);
+    // 始终设置状态栏为灰色背景，防止主题切换后消失
+    lv_obj_set_style_bg_color(status_bar_, lv_color_hex(0xBBBBBB), 0);
+    lv_obj_set_style_bg_opa(status_bar_, LV_OPA_60, 0);
     
     // Update status bar elements
     lv_obj_set_style_text_color(network_label_, lvgl_theme->text_color(), 0);
